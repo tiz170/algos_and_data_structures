@@ -1,6 +1,5 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
 
@@ -8,6 +7,7 @@ public class HashChains {
 
     private FastScanner in;
     private PrintWriter out;
+    private ArrayList<String>[] chainingHashMap;
     // store all strings in one list
     private List<String> elems;
     // for hash function
@@ -15,15 +15,17 @@ public class HashChains {
     private int prime = 1000000007;
     private int multiplier = 263;
 
+
     public static void main(String[] args) throws IOException {
         new HashChains().processQueries();
+
     }
 
     private int hashFunc(String s) {
         long hash = 0;
         for (int i = s.length() - 1; i >= 0; --i)
             hash = (hash * multiplier + s.charAt(i)) % prime;
-        return (int)hash % bucketCount;
+        return (int) hash % bucketCount;
     }
 
     private Query readQuery() throws IOException {
@@ -69,14 +71,71 @@ public class HashChains {
         }
     }
 
+    private void processQueryFast(Query query) {
+        switch (query.type) {
+            case "add":
+                int hashValue = hashFunc(query.s);
+                if (chainingHashMap[hashValue] == null) {
+                    ArrayList<String> myArrayList = new ArrayList<>();
+                    myArrayList.add(0, query.s);
+                    chainingHashMap[hashValue] = myArrayList;
+                } else {
+                    if (!chainingHashMap[hashValue].contains(query.s)) {
+                        chainingHashMap[hashValue].add(0, query.s);
+                    }
+                }
+                break;
+
+            case "del":
+                hashValue = hashFunc(query.s);
+                if (chainingHashMap[hashValue] != null) {
+                    for (int i = 0; i < chainingHashMap[hashValue].size(); i++) {
+                        String curString = chainingHashMap[hashValue].get(i);
+                        if (curString.equals(query.s)) {
+                            chainingHashMap[hashValue].remove(i);
+                            break;
+                        }
+                    }
+                }
+                break;
+
+            case "find":
+                hashValue = hashFunc(query.s);
+                if (chainingHashMap[hashValue] != null) {
+                    writeSearchResult(chainingHashMap[hashValue].contains(query.s));
+                } else {
+                    writeSearchResult(false);
+                }
+                break;
+
+            case "check":
+                hashValue = query.ind;
+                if (chainingHashMap[hashValue] != null) {
+                    for (int i = 0; i < chainingHashMap[hashValue].size(); i++) {
+                        String curString = chainingHashMap[hashValue].get(i);
+                            out.print(curString + " ");
+                    }
+                }
+                out.println();
+                // Uncomment the following if you want to play with the program interactively.
+                // out.flush();
+                break;
+            default:
+                throw new RuntimeException("Unknown query: " + query.type);
+        }
+    }
+
     public void processQueries() throws IOException {
         elems = new ArrayList<>();
         in = new FastScanner();
         out = new PrintWriter(new BufferedOutputStream(System.out));
         bucketCount = in.nextInt();
+        // 初始化array
+        chainingHashMap = (ArrayList<String>[]) new ArrayList[bucketCount];
         int queryCount = in.nextInt();
         for (int i = 0; i < queryCount; ++i) {
-            processQuery(readQuery());
+//            processQuery(readQuery());
+            processQueryFast(readQuery());
         }
         out.close();
     }
